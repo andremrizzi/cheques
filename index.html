@@ -46,6 +46,94 @@
     .panel{box-shadow:none;border:1px solid #ddd;}
     input{border:1px solid #ddd !important;}
   }
+
+  /* ---- Documento para o cliente (impressão / PNG) ---- */
+  #printView{display:none;}
+  #printView.active{display:block;}
+  .doc{
+    background:#fff;
+    padding:40px 44px;
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .doc-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    border-bottom:2px solid var(--text);
+    padding-bottom:18px;
+    margin-bottom:24px;
+  }
+  .doc-header h2{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:1px;
+    font-size:30px;
+    margin:0 0 4px;
+  }
+  .doc-header .doc-sub{font-size:13px;color:var(--muted);}
+  .doc-header .doc-date{
+    font-family:'DM Mono',monospace;
+    font-size:12px;
+    color:var(--muted);
+    text-align:right;
+    white-space:nowrap;
+  }
+  .doc-meta{
+    display:flex;
+    gap:40px;
+    flex-wrap:wrap;
+    margin-bottom:26px;
+    font-size:13px;
+  }
+  .doc-meta div span{display:block;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+  .doc-meta div b{font-size:15px;}
+  .doc table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+    margin-bottom:26px;
+  }
+  .doc thead th{
+    background:var(--panel-2);
+    border-bottom:1px solid var(--text);
+    padding:9px 10px;
+    text-align:left;
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.4px;
+    color:var(--muted);
+  }
+  .doc tbody td{
+    padding:8px 10px;
+    border-bottom:1px solid var(--line);
+    font-family:'DM Mono',monospace;
+  }
+  .doc tbody tr:nth-child(even){background:rgba(0,0,0,0.015);}
+  .doc td.right, .doc th.right{text-align:right;}
+  .doc-totals{
+    display:flex;
+    justify-content:flex-end;
+    gap:32px;
+    flex-wrap:wrap;
+    border-top:1px solid var(--line);
+    padding-top:18px;
+    margin-bottom:28px;
+  }
+  .doc-totals .t-item{text-align:right;}
+  .doc-totals .t-item span{display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:3px;}
+  .doc-totals .t-item b{font-family:'DM Mono',monospace;font-size:17px;}
+  .doc-totals .t-item.final b{color:var(--accent);font-size:20px;}
+  .doc-footer{
+    display:flex;
+    justify-content:space-between;
+    gap:40px;
+    margin-top:36px;
+    padding-top:18px;
+    border-top:1px solid var(--line);
+  }
+  .doc-note{font-size:11px;color:var(--muted);max-width:420px;line-height:1.5;}
+  .doc-sign{text-align:center;font-size:12px;color:var(--muted);}
+  .doc-sign .line{border-top:1px solid var(--text);width:220px;margin:34px 0 6px;}
   h1{
     font-family:'Bebas Neue',sans-serif;
     letter-spacing:1.5px;
@@ -190,6 +278,13 @@
   }
   .paste-hint{font-size:12px;color:var(--muted);margin:8px 0;}
   .paste-hint code{color:var(--accent);}
+  .series-fields{
+    display:flex;
+    gap:20px;
+    flex-wrap:wrap;
+    margin-top:10px;
+  }
+  .series-fields .field input{width:180px;}
 
   .totals{
     display:grid;
@@ -238,7 +333,7 @@
 <div class="wrap" id="captureArea">
   <div class="top-row">
     <div>
-      <h1>DESCONTO DE CHEQUES</h1>
+      <h1>SIMULADOR DE DESCONTO DE CHEQUES</h1>
       <div class="subtitle">Cálculo de juros sobre antecipação de cheques — taxa <b>mensal</b> aplicada proporcionalmente aos dias corridos</div>
     </div>
     <div class="export-actions no-print">
@@ -247,9 +342,14 @@
     </div>
   </div>
 
+  <div class="no-print" id="editView">
   <div class="panel">
-    <div class="panel-title">PARÂMETROS DA NEGOCIAÇÃO</div>
+  <div class="panel-title" style="margin-bottom:4px;">PARÂMETROS DA NEGOCIAÇÃO</div>
     <div class="params">
+      <div class="field">
+        <label>Cliente / Titular</label>
+        <input type="text" id="clienteNome" placeholder="Nome do cliente">
+      </div>
       <div class="field">
         <label>Data de Movimento</label>
         <input type="date" id="dataMovimento">
@@ -264,7 +364,7 @@
     </div>
   </div>
 
-  <div class="panel">
+  <div class="panel" id="tablePanel">
     <div class="panel-title">CHEQUES NEGOCIADOS</div>
     <div class="table-scroll">
       <table>
@@ -285,8 +385,32 @@
 
     <div class="row-actions">
       <button id="addRowBtn">+ Adicionar Cheque</button>
+      <button id="toggleSeriesBtn">Gerar Série</button>
       <button id="togglePasteBtn">Colar Lista</button>
       <button id="clearBtn">Limpar Tudo</button>
+    </div>
+
+    <div class="paste-area" id="seriesArea">
+      <div class="paste-hint">
+        Gera cheques automaticamente, um por mês, com o mesmo valor e o mesmo dia de vencimento — igual ao exemplo (dia 23, valor fixo).
+      </div>
+      <div class="series-fields">
+        <div class="field">
+          <label>1ª Data de Vencimento</label>
+          <input type="date" id="seriesPrimeiraData">
+        </div>
+        <div class="field">
+          <label>Valor Fixo (R$)</label>
+          <input type="text" inputmode="decimal" id="seriesValor" placeholder="0,00">
+        </div>
+        <div class="field">
+          <label>Quantidade de Cheques</label>
+          <input type="number" id="seriesQtd" min="1" max="60" value="10">
+        </div>
+      </div>
+      <div class="row-actions">
+        <button class="primary" id="generateSeriesBtn">Gerar Cheques</button>
+      </div>
     </div>
 
     <div class="paste-area" id="pasteArea">
@@ -322,6 +446,9 @@
       </div>
     </div>
   </div>
+  </div><!-- /editView -->
+
+  <div id="printView"></div>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
@@ -340,7 +467,8 @@ function addRow(data){
     numero: data?.numero ?? rows.length + 1,
     vencimento: data?.vencimento ?? '',
     compensar: data?.compensar ?? '',
-    valor: data?.valor ?? ''
+    valor: data?.valor ?? '',
+    compensarManual: data?.compensarManual ?? !!(data?.compensar)
   });
   render();
 }
@@ -371,8 +499,25 @@ function parseNumberBR(str){
   return isNaN(n) ? 0 : n;
 }
 
+function parseTaxa(str){
+  // campo nativo type=number sempre usa ponto como decimal, nunca vírgula
+  const n = parseFloat(str);
+  return isNaN(n) ? 0 : n;
+}
+
 function fmtMoney(n){
-  return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+  return n.toLocaleString('pt-BR', {
+    style:'currency',
+    currency:'BRL',
+    minimumFractionDigits:2,
+    maximumFractionDigits:2
+  });
+}
+
+function fmtDateBR(iso){
+  if(!iso) return '—';
+  const [y,m,d] = iso.split('-');
+  return `${d}/${m}/${y}`;
 }
 
 function toInputDate(str){
@@ -389,36 +534,33 @@ function diffDays(dataMov, dataComp){
   return diff;
 }
 
-function render(){
-  const tbody = document.getElementById('tbody');
+// Se a data cair em sábado (6) ou domingo (0), empurra pro próximo dia útil (segunda)
+function proximoDiaUtil(isoDate){
+  if(!isoDate) return '';
+  const [y,m,d] = isoDate.split('-').map(Number);
+  const date = new Date(y, m-1, d);
+  const dow = date.getDay();
+  if(dow === 6) date.setDate(date.getDate() + 2); // sábado -> segunda
+  else if(dow === 0) date.setDate(date.getDate() + 1); // domingo -> segunda
+  return date.toISOString().slice(0,10);
+}
+
+function computeRow(r, dataMovimento, taxa){
+  const dias = dataMovimento && r.compensar ? diffDays(dataMovimento, r.compensar) : null;
+  const valorNum = parseNumberBR(r.valor);
+  const juros = (dias !== null && dias >= 0) ? valorNum * (taxa/100/30) * dias : 0;
+  return {dias, valorNum, juros};
+}
+
+function updateTotals(){
   const dataMovimento = document.getElementById('dataMovimento').value;
-  const taxa = parseNumberBR(document.getElementById('taxaJuros').value);
-
-  tbody.innerHTML = '';
-  let totalValor = 0;
-  let totalJuros = 0;
-
-  rows.forEach((r) => {
-    const dias = dataMovimento && r.compensar ? diffDays(dataMovimento, r.compensar) : null;
-    const valorNum = parseNumberBR(r.valor);
-    const juros = (dias !== null && dias >= 0) ? valorNum * (taxa/100/30) * dias : 0;
-
+  const taxa = parseTaxa(document.getElementById('taxaJuros').value);
+  let totalValor = 0, totalJuros = 0;
+  rows.forEach(r => {
+    const {valorNum, juros} = computeRow(r, dataMovimento, taxa);
     totalValor += valorNum;
     totalJuros += juros;
-
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td class="num">${r.numero}</td>
-      <td><input type="date" value="${r.vencimento}" data-field="vencimento" data-id="${r.id}"></td>
-      <td><input type="date" value="${r.compensar}" data-field="compensar" data-id="${r.id}"></td>
-      <td><input type="text" inputmode="decimal" value="${r.valor}" placeholder="0,00" data-field="valor" data-id="${r.id}"></td>
-      <td class="readout">${dias !== null ? (dias >= 0 ? dias : '—') : '—'}</td>
-      <td class="readout juros">${fmtMoney(juros)}</td>
-      <td class="del"><button class="del-btn" data-del="${r.id}" title="Remover">✕</button></td>
-    `;
-    tbody.appendChild(tr);
   });
-
   document.getElementById('totalCheques').textContent = fmtMoney(totalValor);
   document.getElementById('totalChequesQtd').textContent = `${rows.length} cheque(s)`;
   document.getElementById('totalJuros').textContent = fmtMoney(totalJuros);
@@ -426,17 +568,87 @@ function render(){
   document.getElementById('countNote').textContent = rows.length
     ? `${rows.length} cheque(s) negociado(s)`
     : 'Nenhum cheque adicionado ainda.';
+}
 
-  // listeners
-  tbody.querySelectorAll('input').forEach(inp => {
-    inp.addEventListener('change', (e) => {
+// Atualiza só as células calculadas (Dias/Juros) de UMA linha, sem tocar nos inputs
+function updateRowReadout(id){
+  const dataMovimento = document.getElementById('dataMovimento').value;
+  const taxa = parseTaxa(document.getElementById('taxaJuros').value);
+  const row = rows.find(r => r.id === id);
+  if(!row) return;
+  const {dias, juros} = computeRow(row, dataMovimento, taxa);
+  const tr = document.querySelector(`tr[data-row-id="${id}"]`);
+  if(tr){
+    tr.querySelector('.dias-cell').textContent = dias !== null ? (dias >= 0 ? dias : '—') : '—';
+    tr.querySelector('.juros-cell').textContent = fmtMoney(juros);
+  }
+  updateTotals();
+}
+
+// Reconstrói só quando linhas são adicionadas/removidas; nunca durante digitação
+function render(){
+  const tbody = document.getElementById('tbody');
+  const dataMovimento = document.getElementById('dataMovimento').value;
+  const taxa = parseTaxa(document.getElementById('taxaJuros').value);
+
+  tbody.innerHTML = '';
+
+  rows.forEach((r, idx) => {
+    const {dias, juros} = computeRow(r, dataMovimento, taxa);
+
+    const tr = document.createElement('tr');
+    tr.setAttribute('data-row-id', r.id);
+    tr.innerHTML = `
+      <td class="num">${idx + 1}</td>
+      <td><input type="date" value="${r.vencimento}" data-field="vencimento" data-id="${r.id}"></td>
+      <td><input type="date" value="${r.compensar}" data-field="compensar" data-id="${r.id}"></td>
+      <td><input type="text" inputmode="decimal" value="${r.valor}" placeholder="0,00" data-field="valor" data-id="${r.id}"></td>
+      <td class="readout dias-cell">${dias !== null ? (dias >= 0 ? dias : '—') : '—'}</td>
+      <td class="readout juros juros-cell">${fmtMoney(juros)}</td>
+      <td class="del"><button class="del-btn" data-del="${r.id}" title="Remover">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  updateTotals();
+
+  // listeners: input dispara a cada tecla, sem reconstruir a tabela
+  tbody.querySelectorAll('input[type="text"]').forEach(inp => {
+    inp.addEventListener('input', (e) => {
       const id = Number(e.target.dataset.id);
-      const field = e.target.dataset.field;
       const row = rows.find(r => r.id === id);
-      row[field] = e.target.value;
-      render();
+      row.valor = e.target.value;
+      updateRowReadout(id);
     });
   });
+
+  tbody.querySelectorAll('input[data-field="vencimento"]').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const id = Number(e.target.dataset.id);
+      const row = rows.find(r => r.id === id);
+      row.vencimento = e.target.value;
+
+      // auto-preenche Compensar com o próximo dia útil, a menos que o usuário já tenha editado manualmente
+      if(!row.compensarManual){
+        const sugestao = proximoDiaUtil(e.target.value);
+        row.compensar = sugestao;
+        const compensarInput = document.querySelector(`input[data-field="compensar"][data-id="${id}"]`);
+        if(compensarInput) compensarInput.value = sugestao;
+      }
+      updateRowReadout(id);
+    });
+  });
+
+  tbody.querySelectorAll('input[data-field="compensar"]').forEach(inp => {
+    inp.addEventListener('input', (e) => {
+      const id = Number(e.target.dataset.id);
+      const row = rows.find(r => r.id === id);
+      row.compensar = e.target.value;
+      row.compensarManual = true; // usuário editou na mão, para de auto-preencher
+      updateRowReadout(id);
+    });
+  });
+
   tbody.querySelectorAll('[data-del]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       removeRow(Number(e.target.dataset.del));
@@ -444,14 +656,51 @@ function render(){
   });
 }
 
+function recalcAll(){
+  rows.forEach(r => updateRowReadout(r.id));
+}
+
 document.getElementById('dataMovimento').value = todayISO();
-document.getElementById('dataMovimento').addEventListener('change', render);
-document.getElementById('taxaJuros').addEventListener('input', render);
+document.getElementById('dataMovimento').addEventListener('input', recalcAll);
+document.getElementById('taxaJuros').addEventListener('input', recalcAll);
 
 document.getElementById('addRowBtn').addEventListener('click', () => addRow());
 
 document.getElementById('togglePasteBtn').addEventListener('click', () => {
   document.getElementById('pasteArea').classList.toggle('open');
+  document.getElementById('seriesArea').classList.remove('open');
+});
+
+document.getElementById('toggleSeriesBtn').addEventListener('click', () => {
+  document.getElementById('seriesArea').classList.toggle('open');
+  document.getElementById('pasteArea').classList.remove('open');
+});
+
+document.getElementById('generateSeriesBtn').addEventListener('click', () => {
+  const primeiraData = document.getElementById('seriesPrimeiraData').value;
+  const valor = document.getElementById('seriesValor').value;
+  const qtd = parseInt(document.getElementById('seriesQtd').value, 10);
+
+  if(!primeiraData){ alert('Informe a 1ª Data de Vencimento.'); return; }
+  if(!valor){ alert('Informe o Valor Fixo do cheque.'); return; }
+  if(!qtd || qtd < 1){ alert('Informe uma quantidade válida de cheques.'); return; }
+
+  const [y, m, d] = primeiraData.split('-').map(Number);
+
+  for(let i = 0; i < qtd; i++){
+    const venc = new Date(y, m - 1 + i, d);
+    const vencISO = venc.toISOString().slice(0, 10);
+    const compISO = proximoDiaUtil(vencISO);
+    addRow({
+      numero: rows.length + 1,
+      vencimento: vencISO,
+      compensar: compISO,
+      valor: valor,
+      compensarManual: false
+    });
+  }
+
+  document.getElementById('seriesArea').classList.remove('open');
 });
 
 document.getElementById('clearBtn').addEventListener('click', () => {
@@ -483,34 +732,123 @@ document.getElementById('importBtn').addEventListener('click', () => {
   document.getElementById('pasteArea').classList.remove('open');
 });
 
+function renderPrintView(){
+  const cliente = document.getElementById('clienteNome').value.trim() || '—';
+  const dataMovimento = document.getElementById('dataMovimento').value;
+  const taxa = parseTaxa(document.getElementById('taxaJuros').value);
+  const hoje = new Date().toLocaleDateString('pt-BR');
+
+  let totalValor = 0, totalJuros = 0;
+  const linhas = rows.map((r, idx) => {
+    const {dias, valorNum, juros} = computeRow(r, dataMovimento, taxa);
+    totalValor += valorNum;
+    totalJuros += juros;
+    return `
+      <tr>
+        <td>${idx + 1}</td>
+        <td>${fmtDateBR(r.vencimento)}</td>
+        <td>${fmtDateBR(r.compensar)}</td>
+        <td class="right">${fmtMoney(valorNum)}</td>
+        <td class="right">${dias !== null && dias >= 0 ? dias : '—'}</td>
+        <td class="right">${fmtMoney(juros)}</td>
+      </tr>`;
+  }).join('');
+
+  const totalPagar = totalValor - totalJuros;
+
+  document.getElementById('printView').innerHTML = `
+    <div class="doc">
+      <div class="doc-header">
+        <div>
+          <h2>Proposta de Antecipação de Cheques</h2>
+          <div class="doc-sub">Simulação de desconto — sujeita a confirmação</div>
+        </div>
+        <div class="doc-date">Emitido em<br>${hoje}</div>
+      </div>
+
+      <div class="doc-meta">
+        <div><span>Cliente / Titular</span><b>${cliente}</b></div>
+        <div><span>Data de Movimento</span><b>${fmtDateBR(dataMovimento)}</b></div>
+        <div><span>Taxa de Juros (mensal)</span><b>${taxa.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}%</b></div>
+        <div><span>Quantidade de Cheques</span><b>${rows.length}</b></div>
+      </div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Vencimento</th>
+            <th>Compensar</th>
+            <th class="right">Valor</th>
+            <th class="right">Dias</th>
+            <th class="right">Juros</th>
+          </tr>
+        </thead>
+        <tbody>${linhas}</tbody>
+      </table>
+
+      <div class="doc-totals">
+        <div class="t-item">
+          <span>Total de Cheques</span>
+          <b>${fmtMoney(totalValor)}</b>
+        </div>
+        <div class="t-item">
+          <span>Total de Juros</span>
+          <b>${fmtMoney(totalJuros)}</b>
+        </div>
+        <div class="t-item final">
+          <span>Total a Pagar (Líquido)</span>
+          <b>${fmtMoney(totalPagar)}</b>
+        </div>
+      </div>
+
+      <div class="doc-footer">
+        <div class="doc-note">
+          Valores calculados com base na taxa de juros mensal informada, aplicada proporcionalmente aos dias corridos entre a Data de Movimento e a Data de Compensação de cada cheque. Proposta sem validade fiscal, sujeita à conferência e aprovação final.
+        </div>
+        <div class="doc-sign">
+          <div class="line"></div>
+          Assinatura / De acordo
+        </div>
+      </div>
+    </div>
+  `;
+}
+
 document.getElementById('printBtn').addEventListener('click', () => {
+  renderPrintView();
+  document.getElementById('printView').classList.add('active');
   window.print();
+});
+
+window.addEventListener('afterprint', () => {
+  document.getElementById('printView').classList.remove('active');
 });
 
 document.getElementById('pngBtn').addEventListener('click', () => {
   const btn = document.getElementById('pngBtn');
   const originalText = btn.textContent;
   btn.textContent = 'Gerando...';
-  const area = document.getElementById('captureArea');
-  const actionsEls = document.querySelectorAll('.no-print');
-  actionsEls.forEach(el => el.style.visibility = 'hidden');
 
-  html2canvas(area, {backgroundColor:'#f7f5f2', scale:2}).then(canvas => {
-    actionsEls.forEach(el => el.style.visibility = '');
+  renderPrintView();
+  const printView = document.getElementById('printView');
+  printView.classList.add('active');
+
+  html2canvas(printView, {backgroundColor:'#ffffff', scale:2}).then(canvas => {
+    printView.classList.remove('active');
     btn.textContent = originalText;
     const link = document.createElement('a');
     link.download = 'proposta_desconto_cheques.png';
     link.href = canvas.toDataURL('image/png');
     link.click();
   }).catch(() => {
-    actionsEls.forEach(el => el.style.visibility = '');
+    printView.classList.remove('active');
     btn.textContent = originalText;
     alert('Não foi possível gerar o PNG. Tente usar "Imprimir / Salvar PDF".');
   });
 });
 
-// linha inicial de exemplo (vazia, pronta para digitar)
-addRow();
+// tabela começa vazia: usuário escolhe "Adicionar Cheque" ou "Gerar Série"
 render();
 </script>
 </body>
