@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<title>Desconto de Cheques — Cálculo de Juros</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap');
+
+  :root{
+    --bg:#f7f5f2;
+    --panel:#ffffff;
+    --panel-2:#f2efe9;
+    --line:#e2ddd4;
+    --text:#28241f;
+    --muted:#8a8074;
+    --accent:#9c7a3c;
+    --accent-dim:#c8a96e;
+    --danger:#b04a38;
+    --good:#4f7a49;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--text);
+    font-family:'DM Sans',sans-serif;
+    padding:32px 24px 80px;
+  }
+  .wrap{max-width:1180px;margin:0 auto;}
+  .top-row{
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:20px;
+    flex-wrap:wrap;
+  }
+  .export-actions{display:flex;gap:10px;flex-wrap:wrap;}
+  .export-actions button{
+    background:var(--panel);
+    border:1px solid var(--line);
+  }
+
+  @media print{
+    .no-print{display:none !important;}
+    body{background:#fff;padding:0;}
+    .panel{box-shadow:none;border:1px solid #ddd;}
+    input{border:1px solid #ddd !important;}
+  }
+  h1{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:1.5px;
+    font-size:40px;
+    margin:0 0 4px;
+    color:var(--text);
+  }
+  .subtitle{color:var(--muted);font-size:14px;margin-bottom:28px;}
+  .subtitle b{color:var(--accent);}
+
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:20px 24px;
+    margin-bottom:20px;
+    box-shadow:0 1px 3px rgba(40,36,31,0.06), 0 1px 2px rgba(40,36,31,0.04);
+  }
+  .panel-title{
+    font-family:'Bebas Neue',sans-serif;
+    letter-spacing:1px;
+    font-size:18px;
+    color:var(--accent);
+    margin:0 0 14px;
+  }
+
+  .params{
+    display:flex;
+    gap:24px;
+    flex-wrap:wrap;
+  }
+  .field{display:flex;flex-direction:column;gap:6px;}
+  .field label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+  .field input{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:9px 12px;
+    border-radius:6px;
+    font-family:'DM Mono',monospace;
+    font-size:14px;
+    width:160px;
+  }
+  .field input:focus{outline:none;border-color:var(--accent-dim);}
+
+  .basis-note{
+    font-size:12px;
+    color:var(--muted);
+    align-self:flex-end;
+    margin-left:auto;
+    max-width:260px;
+  }
+
+  table{
+    width:100%;
+    border-collapse:collapse;
+    font-size:13px;
+  }
+  thead th{
+    background:var(--panel-2);
+    color:var(--muted);
+    text-transform:uppercase;
+    font-size:11px;
+    letter-spacing:.5px;
+    padding:10px 8px;
+    text-align:left;
+    border-bottom:1px solid var(--line);
+    white-space:nowrap;
+  }
+  tbody td{
+    padding:6px 8px;
+    border-bottom:1px solid var(--line);
+    vertical-align:middle;
+  }
+  tbody tr:hover{background:rgba(255,255,255,0.02);}
+  td input{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    padding:6px 8px;
+    border-radius:5px;
+    font-family:'DM Mono',monospace;
+    font-size:13px;
+    width:100%;
+  }
+  td input:focus{outline:none;border-color:var(--accent-dim);}
+  td.readout{
+    font-family:'DM Mono',monospace;
+    color:var(--text);
+    text-align:right;
+    white-space:nowrap;
+  }
+  td.readout.juros{color:var(--accent);}
+  td.num{width:34px;color:var(--muted);font-family:'DM Mono',monospace;text-align:center;}
+  td.del{width:34px;text-align:center;}
+  .del-btn{
+    background:none;border:none;color:var(--danger);
+    cursor:pointer;font-size:16px;line-height:1;
+    opacity:.6;
+  }
+  .del-btn:hover{opacity:1;}
+
+  .row-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+    flex-wrap:wrap;
+  }
+  button{
+    font-family:'DM Sans',sans-serif;
+    font-weight:600;
+    font-size:13px;
+    padding:9px 16px;
+    border-radius:6px;
+    border:1px solid var(--line);
+    background:var(--panel-2);
+    color:var(--text);
+    cursor:pointer;
+    transition:border-color .15s;
+  }
+  button:hover{border-color:var(--accent-dim);}
+  button.primary{
+    background:var(--accent-dim);
+    border-color:var(--accent-dim);
+    color:#fff;
+  }
+  button.primary:hover{background:var(--accent);border-color:var(--accent);}
+
+  .paste-area{display:none;margin-top:14px;}
+  .paste-area.open{display:block;}
+  .paste-area textarea{
+    width:100%;
+    min-height:110px;
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    color:var(--text);
+    border-radius:6px;
+    padding:10px 12px;
+    font-family:'DM Mono',monospace;
+    font-size:13px;
+    resize:vertical;
+  }
+  .paste-hint{font-size:12px;color:var(--muted);margin:8px 0;}
+  .paste-hint code{color:var(--accent);}
+
+  .totals{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(210px,1fr));
+    gap:14px;
+    margin-top:6px;
+  }
+  .total-card{
+    background:var(--panel-2);
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:14px 16px;
+  }
+  .total-card .label{
+    font-size:11px;
+    text-transform:uppercase;
+    letter-spacing:.5px;
+    color:var(--muted);
+    margin-bottom:6px;
+  }
+  .total-card .value{
+    font-family:'DM Mono',monospace;
+    font-size:20px;
+    color:var(--text);
+  }
+  .total-card.juros .value{color:var(--accent);}
+  .total-card.final{
+    border-color:var(--accent-dim);
+  }
+  .total-card.final .value{color:var(--accent);font-weight:700;}
+  .total-card .sub{
+    font-size:12px;
+    color:var(--muted);
+    margin-top:4px;
+    font-family:'DM Mono',monospace;
+  }
+
+  .count-note{color:var(--muted);font-size:12px;margin-top:12px;}
+
+  ::-webkit-scrollbar{height:8px;width:8px;}
+  ::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  .table-scroll{overflow-x:auto;}
+</style>
+</head>
+<body>
+<div class="wrap" id="captureArea">
+  <div class="top-row">
+    <div>
+      <h1>DESCONTO DE CHEQUES</h1>
+      <div class="subtitle">Cálculo de juros sobre antecipação de cheques — taxa <b>mensal</b> aplicada proporcionalmente aos dias corridos</div>
+    </div>
+    <div class="export-actions no-print">
+      <button id="printBtn">🖨 Imprimir / Salvar PDF</button>
+      <button id="pngBtn">🖼 Exportar PNG</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">PARÂMETROS DA NEGOCIAÇÃO</div>
+    <div class="params">
+      <div class="field">
+        <label>Data de Movimento</label>
+        <input type="date" id="dataMovimento">
+      </div>
+      <div class="field">
+        <label>% Taxa de Juros (mensal)</label>
+        <input type="number" id="taxaJuros" step="0.01" placeholder="1,80" value="1.80">
+      </div>
+      <div class="basis-note">
+        Juros calculados a partir da <b style="color:var(--accent)">Data de Compensação</b> de cada cheque, em relação à Data de Movimento.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">CHEQUES NEGOCIADOS</div>
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Nº</th>
+            <th>Vencimento</th>
+            <th>Compensar</th>
+            <th>Valor (R$)</th>
+            <th>Dias</th>
+            <th>Juros (R$)</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="row-actions">
+      <button id="addRowBtn">+ Adicionar Cheque</button>
+      <button id="togglePasteBtn">Colar Lista</button>
+      <button id="clearBtn">Limpar Tudo</button>
+    </div>
+
+    <div class="paste-area" id="pasteArea">
+      <div class="paste-hint">
+        Cole uma linha por cheque, campos separados por TAB (copiado de Excel/planilha) ou por ponto e vírgula, na ordem:
+        <code>Nº; Vencimento (dd/mm/aaaa); Compensar (dd/mm/aaaa); Valor</code>
+      </div>
+      <textarea id="pasteInput" placeholder="1;23/08/2026;24/08/2026;11130,00
+2;23/09/2026;23/09/2026;11130,00"></textarea>
+      <div class="row-actions">
+        <button class="primary" id="importBtn">Importar</button>
+      </div>
+    </div>
+
+    <div class="count-note" id="countNote"></div>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">RESUMO</div>
+    <div class="totals">
+      <div class="total-card">
+        <div class="label">Total de Cheques Negociados</div>
+        <div class="value" id="totalCheques">R$ 0,00</div>
+        <div class="sub" id="totalChequesQtd">0 cheque(s)</div>
+      </div>
+      <div class="total-card juros">
+        <div class="label">Total de Juros Calculado</div>
+        <div class="value" id="totalJuros">R$ 0,00</div>
+      </div>
+      <div class="total-card final">
+        <div class="label">Total a Pagar (Valor Líquido)</div>
+        <div class="value" id="totalPagar">R$ 0,00</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script>
+let rows = [];
+let rowIdSeq = 1;
+
+function todayISO(){
+  const d = new Date();
+  return d.toISOString().slice(0,10);
+}
+
+function addRow(data){
+  rows.push({
+    id: rowIdSeq++,
+    numero: data?.numero ?? rows.length + 1,
+    vencimento: data?.vencimento ?? '',
+    compensar: data?.compensar ?? '',
+    valor: data?.valor ?? ''
+  });
+  render();
+}
+
+function removeRow(id){
+  rows = rows.filter(r => r.id !== id);
+  render();
+}
+
+function parseBRDate(str){
+  // aceita dd/mm/aaaa ou yyyy-mm-dd
+  if(!str) return null;
+  str = str.trim();
+  let m = str.match(/^(\d{2})\/(\d{2})\/(\d{4})$/);
+  if(m) return new Date(Number(m[3]), Number(m[2])-1, Number(m[1]));
+  m = str.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  if(m) return new Date(Number(m[1]), Number(m[2])-1, Number(m[3]));
+  return null;
+}
+
+function parseNumberBR(str){
+  if(typeof str === 'number') return str;
+  if(!str) return 0;
+  str = String(str).trim();
+  // remove separador de milhar '.', troca ',' decimal por '.'
+  str = str.replace(/\./g,'').replace(',', '.');
+  const n = parseFloat(str);
+  return isNaN(n) ? 0 : n;
+}
+
+function fmtMoney(n){
+  return n.toLocaleString('pt-BR', {style:'currency', currency:'BRL'});
+}
+
+function toInputDate(str){
+  const d = parseBRDate(str);
+  if(!d) return '';
+  return d.toISOString().slice(0,10);
+}
+
+function diffDays(dataMov, dataComp){
+  if(!dataMov || !dataComp) return null;
+  const a = new Date(dataMov);
+  const b = new Date(dataComp);
+  const diff = Math.round((b - a) / (1000*60*60*24));
+  return diff;
+}
+
+function render(){
+  const tbody = document.getElementById('tbody');
+  const dataMovimento = document.getElementById('dataMovimento').value;
+  const taxa = parseNumberBR(document.getElementById('taxaJuros').value);
+
+  tbody.innerHTML = '';
+  let totalValor = 0;
+  let totalJuros = 0;
+
+  rows.forEach((r) => {
+    const dias = dataMovimento && r.compensar ? diffDays(dataMovimento, r.compensar) : null;
+    const valorNum = parseNumberBR(r.valor);
+    const juros = (dias !== null && dias >= 0) ? valorNum * (taxa/100/30) * dias : 0;
+
+    totalValor += valorNum;
+    totalJuros += juros;
+
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td class="num">${r.numero}</td>
+      <td><input type="date" value="${r.vencimento}" data-field="vencimento" data-id="${r.id}"></td>
+      <td><input type="date" value="${r.compensar}" data-field="compensar" data-id="${r.id}"></td>
+      <td><input type="text" inputmode="decimal" value="${r.valor}" placeholder="0,00" data-field="valor" data-id="${r.id}"></td>
+      <td class="readout">${dias !== null ? (dias >= 0 ? dias : '—') : '—'}</td>
+      <td class="readout juros">${fmtMoney(juros)}</td>
+      <td class="del"><button class="del-btn" data-del="${r.id}" title="Remover">✕</button></td>
+    `;
+    tbody.appendChild(tr);
+  });
+
+  document.getElementById('totalCheques').textContent = fmtMoney(totalValor);
+  document.getElementById('totalChequesQtd').textContent = `${rows.length} cheque(s)`;
+  document.getElementById('totalJuros').textContent = fmtMoney(totalJuros);
+  document.getElementById('totalPagar').textContent = fmtMoney(totalValor - totalJuros);
+  document.getElementById('countNote').textContent = rows.length
+    ? `${rows.length} cheque(s) negociado(s)`
+    : 'Nenhum cheque adicionado ainda.';
+
+  // listeners
+  tbody.querySelectorAll('input').forEach(inp => {
+    inp.addEventListener('change', (e) => {
+      const id = Number(e.target.dataset.id);
+      const field = e.target.dataset.field;
+      const row = rows.find(r => r.id === id);
+      row[field] = e.target.value;
+      render();
+    });
+  });
+  tbody.querySelectorAll('[data-del]').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      removeRow(Number(e.target.dataset.del));
+    });
+  });
+}
+
+document.getElementById('dataMovimento').value = todayISO();
+document.getElementById('dataMovimento').addEventListener('change', render);
+document.getElementById('taxaJuros').addEventListener('input', render);
+
+document.getElementById('addRowBtn').addEventListener('click', () => addRow());
+
+document.getElementById('togglePasteBtn').addEventListener('click', () => {
+  document.getElementById('pasteArea').classList.toggle('open');
+});
+
+document.getElementById('clearBtn').addEventListener('click', () => {
+  if(confirm('Remover todos os cheques da lista?')){
+    rows = [];
+    render();
+  }
+});
+
+document.getElementById('importBtn').addEventListener('click', () => {
+  const text = document.getElementById('pasteInput').value;
+  if(!text.trim()) return;
+
+  const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+  lines.forEach(line => {
+    const sep = line.includes('\t') ? '\t' : ';';
+    const parts = line.split(sep).map(p => p.trim());
+    if(parts.length < 4) return;
+    const [numero, vencimento, compensar, valor] = parts;
+    addRow({
+      numero: numero || (rows.length + 1),
+      vencimento: toInputDate(vencimento),
+      compensar: toInputDate(compensar),
+      valor: valor
+    });
+  });
+
+  document.getElementById('pasteInput').value = '';
+  document.getElementById('pasteArea').classList.remove('open');
+});
+
+document.getElementById('printBtn').addEventListener('click', () => {
+  window.print();
+});
+
+document.getElementById('pngBtn').addEventListener('click', () => {
+  const btn = document.getElementById('pngBtn');
+  const originalText = btn.textContent;
+  btn.textContent = 'Gerando...';
+  const area = document.getElementById('captureArea');
+  const actionsEls = document.querySelectorAll('.no-print');
+  actionsEls.forEach(el => el.style.visibility = 'hidden');
+
+  html2canvas(area, {backgroundColor:'#f7f5f2', scale:2}).then(canvas => {
+    actionsEls.forEach(el => el.style.visibility = '');
+    btn.textContent = originalText;
+    const link = document.createElement('a');
+    link.download = 'proposta_desconto_cheques.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  }).catch(() => {
+    actionsEls.forEach(el => el.style.visibility = '');
+    btn.textContent = originalText;
+    alert('Não foi possível gerar o PNG. Tente usar "Imprimir / Salvar PDF".');
+  });
+});
+
+// linha inicial de exemplo (vazia, pronta para digitar)
+addRow();
+render();
+</script>
+</body>
+</html>
